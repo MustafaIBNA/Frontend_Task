@@ -15,7 +15,7 @@ const Container = ({
   onDeleteTask,
   className,
 }) => {
-  const filteredTasks = tasks.filter((task) => task.column === column);
+  const filteredTasks = tasks.filter((task) => task?.column === column);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
 
