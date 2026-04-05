@@ -6,10 +6,17 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { DragDropContext } from "@hello-pangea/dnd";
 
 async function fetchTasks() {
-  const response = await fetch("http://localhost:4000/tasks");
+  const response = await fetch(
+    "https://ayvncyjajelhcgqcpmfk.supabase.co/rest/v1/tasks?order=order.asc",
+    {
+      headers: {
+        apikey: "sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+        Authorization: "Bearer sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+      },
+    },
+  );
   if (!response.ok) throw new Error("Failed to fetch tasks");
-  const data = await response.json();
-  return data.sort((a, b) => a.order - b.order);
+  return response.json();
 }
 export default function Home() {
   const [localTasks, setLocalTasks] = useState([]);
@@ -24,40 +31,70 @@ export default function Home() {
       return data;
     },
   });
-
+  console.log("data", data);
   const createTask = useMutation({
-    mutationFn: (newTask) =>
-      fetch("http://localhost:4000/tasks", {
+  mutationFn: async (newTask) => {
+    const response = await fetch(
+      "https://ayvncyjajelhcgqcpmfk.supabase.co/rest/v1/tasks",
+      {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          apikey: "sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+          Authorization: "Bearer sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
         body: JSON.stringify(newTask),
-      }).then((res) => res.json()),
-    onSuccess: (newTask) => {
-      setLocalTasks((prev) => [...prev, newTask]); // ✅
-    },
-  });
-
+      }
+    );
+    const data = await response.json();
+    return Array.isArray(data) ? data[0] : data; // ✅
+  },
+  onSuccess: (newTask) => {
+    if (newTask) setLocalTasks((prev) => [...prev, newTask]); // ✅
+  },
+});
   const deleteTask = useMutation({
-    mutationFn: (taskId) =>
-      fetch(`http://localhost:4000/tasks/${taskId}`, { method: "DELETE" }),
+    mutationFn: async (taskId) => {
+      await fetch(
+        `https://ayvncyjajelhcgqcpmfk.supabase.co/rest/v1/tasks?id=eq.${taskId}`,
+        {
+          method: "DELETE",
+          headers: {
+            apikey: "sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+            Authorization:
+              "Bearer sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+          },
+        },
+      );
+    },
     onMutate: (taskId) => {
-      setLocalTasks((prev) => prev.filter((task) => task.id !== taskId)); // ✅
+      setLocalTasks((prev) => prev.filter((task) => task.id !== taskId));
     },
   });
 
   const editTask = useMutation({
-    mutationFn: (updatedTask) =>
-      fetch(`http://localhost:4000/tasks/${updatedTask.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedTask),
-      }).then((res) => res.json()),
+    mutationFn: async (updatedTask) => {
+      await fetch(
+        `https://ayvncyjajelhcgqcpmfk.supabase.co/rest/v1/tasks?id=eq.${updatedTask.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: "sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+            Authorization:
+              "Bearer sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedTask),
+        },
+      );
+    },
     onMutate: (updatedTask) => {
       setLocalTasks((prev) =>
         prev.map((task) =>
           task.id === updatedTask.id ? { ...task, ...updatedTask } : task,
         ),
-      ); // ✅
+      );
     },
   });
   const onDragEnd = (result) => {
@@ -100,11 +137,19 @@ export default function Home() {
 
     setTimeout(() => {
       reorderedTasks?.forEach((task) => {
-        fetch(`http://localhost:4000/tasks/${task.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(task),
-        });
+        fetch(
+          `https://ayvncyjajelhcgqcpmfk.supabase.co/rest/v1/tasks?id=eq.${task.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: "sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+              Authorization:
+                "Bearer sb_publishable_CWjnrV1FaB8iP7L9WgK1kw_SLKOCU1P",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(task),
+          },
+        );
       });
     }, 0);
   };
